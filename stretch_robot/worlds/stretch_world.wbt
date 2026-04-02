@@ -6,13 +6,21 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 EXTERNPROTO "../protos/Stretch.proto"
 
 WorldInfo {
-  title "Hello Robot Stretch - Webots"
+  title "Hello Robot Stretch - Pick and Place"
   info [
     "Stretch robot (Hello Robot) imported from URDF"
     "URDF source: facebookresearch/home-robot"
     "Meshes: hello-robot/stretch_ros"
+    "Controller: stretch_pick_place"
   ]
   basicTimeStep 16
+  contactProperties [
+    ContactProperties {
+      material1 "box"
+      material2 "gripper"
+      coulombFriction [ 1.5 ]
+    }
+  ]
 }
 
 Viewpoint {
@@ -27,14 +35,59 @@ TexturedBackgroundLight {
 }
 
 RectangleArena {
-  floorSize 5 5
+  floorSize 6 6
   floorTileSize 0.5 0.5
-  wallHeight 0.05
+  wallHeight 0.1
 }
 
 Stretch {
   translation 0 0 0
   rotation 0 0 1 0
   name "stretch"
-  controller "void"
+  controller "stretch_pick_place"
+}
+
+# Box to pick up — placed in front of the robot (robot faces +X)
+DEF PICKUP_BOX Solid {
+  translation 0.9 0 0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.9 0.3 0.1
+        roughness 0.6
+        metalness 0.0
+      }
+      geometry Box {
+        size 0.08 0.08 0.10
+      }
+    }
+  ]
+  name "pickup_box"
+  contactMaterial "box"
+  boundingObject Box {
+    size 0.08 0.08 0.10
+  }
+  physics Physics {
+    density -1
+    mass 0.3
+  }
+}
+
+# Drop zone marker (flat disc on the floor, to the robot's left)
+DEF DROP_ZONE Solid {
+  translation 0 0.9 0.001
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.1 0.8 0.2
+        roughness 0.9
+        transparency 0.4
+      }
+      geometry Cylinder {
+        height 0.002
+        radius 0.15
+      }
+    }
+  ]
+  name "drop_zone"
 }
