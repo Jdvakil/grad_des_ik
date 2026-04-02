@@ -1,0 +1,1076 @@
+#VRML_SIM R2023b utf8
+# license: Apache License 2.0
+# license url: http://www.apache.org/licenses/LICENSE-2.0
+# This is a proto file for Webots for the Stretch
+# Extracted from: /home/user/grad_des_ik/stretch_robot/urdf/stretch.urdf
+
+PROTO Stretch [
+  field  SFVec3f     translation     0 0 0
+  field  SFRotation  rotation        0 0 1 0
+  field  SFString    name            "Stretch"  # Is `Robot.name`.
+  field  SFString    controller      "void"     # Is `Robot.controller`.
+  field  MFString    controllerArgs  []         # Is `Robot.controllerArgs`.
+  field  SFString    customData      ""         # Is `Robot.customData`.
+  field  SFBool      supervisor      FALSE      # Is `Robot.supervisor`.
+  field  SFBool      synchronization TRUE       # Is `Robot.synchronization`.
+  field  SFBool      selfCollision   FALSE      # Is `Robot.selfCollision`.
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    controller IS controller
+    controllerArgs IS controllerArgs
+    customData IS customData
+    supervisor IS supervisor
+    synchronization IS synchronization
+    selfCollision IS selfCollision
+    children [
+      Shape {
+        appearance DEF base_link_material PBRAppearance {
+          baseColor 0.792157 0.819608 0.933333
+          roughness 1.000000
+          metalness 0
+        }
+        geometry DEF base_link Mesh {
+          url "../meshes/base_link.STL"
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis -0.000000 1.000000 0.000000
+          anchor -0.003000 -0.157650 0.050800
+          dampingConstant 21.75
+          staticFriction 10.48
+        }
+        device [
+          RotationalMotor {
+            name "joint_right_wheel"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "joint_right_wheel_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.003000 -0.157650 0.050800
+          rotation -1.000000 -0.000000 -0.000000 1.570796
+          children [
+            Shape {
+              appearance DEF link_right_wheel_material PBRAppearance {
+                baseColor 0.792157 0.819608 0.933333
+                roughness 1.000000
+                metalness 0
+              }
+              geometry DEF link_right_wheel Mesh {
+                url "../meshes/link_right_wheel.STL"
+              }
+            }
+          ]
+          name "link_right_wheel"
+          boundingObject USE link_right_wheel
+          physics Physics {
+            density -1
+            mass 0.010000
+            centerOfMass [ 0.000000 0.000000 0.023958 ]
+            inertiaMatrix [
+              1.000000e-03 1.000000e-03 1.000000e-03
+              0.000000e+00 0.000000e+00 0.000000e+00
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis -0.000000 1.000000 -0.000000
+          anchor -0.003000 0.157650 0.050800
+          dampingConstant 21.75
+          staticFriction 10.48
+        }
+        device [
+          RotationalMotor {
+            name "joint_left_wheel"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "joint_left_wheel_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.003000 0.157650 0.050800
+          rotation -1.000000 -0.000000 0.000000 1.570796
+          children [
+            Shape {
+              appearance DEF link_left_wheel_material PBRAppearance {
+                baseColor 0.792157 0.819608 0.933333
+                roughness 1.000000
+                metalness 0
+              }
+              geometry DEF link_left_wheel Mesh {
+                url "../meshes/link_left_wheel.STL"
+              }
+            }
+          ]
+          name "link_left_wheel"
+          boundingObject USE link_left_wheel
+          physics Physics {
+            density -1
+            mass 0.010000
+            centerOfMass [ 0.000000 -0.000000 -0.023958 ]
+            inertiaMatrix [
+              1.000000e-03 1.000000e-03 1.000000e-03
+              0.000000e+00 0.000000e+00 0.000000e+00
+            ]
+          }
+        }
+      }
+      Solid {
+        translation -0.245000 0.000000 0.032000
+        rotation -1.000000 0.000000 0.000000 1.570796
+        children [
+          Shape {
+            appearance DEF caster_link_material PBRAppearance {
+              baseColor 0.792157 0.819608 0.933333
+              roughness 1.000000
+              metalness 0
+            }
+            geometry DEF omni_wheel_m Mesh {
+              url "../meshes/omni_wheel_m.STL"
+            }
+          }
+        ]
+        name "caster_link"
+        boundingObject Sphere {
+          radius 0.032
+        }
+        physics Physics {
+          density -1
+          mass 0.010000
+          centerOfMass [ 0.000000 0.000000 0.000000 ]
+          inertiaMatrix [
+            1.000000e-03 1.000000e-03 1.000000e-03
+            0.000000e+00 0.000000e+00 0.000000e+00
+          ]
+        }
+      }
+      Solid {
+        translation -0.070000 0.135000 0.028400
+        rotation 0.999979 0.004627 0.004627 1.570818
+        children [
+          Shape {
+            appearance DEF link_mast_material PBRAppearance {
+              baseColor 0.792157 0.819608 0.933333
+              roughness 1.000000
+              metalness 0
+            }
+            geometry DEF link_mast Mesh {
+              url "../meshes/link_mast.STL"
+            }
+          }
+          SliderJoint {
+            jointParameters JointParameters {
+              axis 0.000000 1.000000 -0.000000
+            }
+            device [
+              LinearMotor {
+                name "joint_lift"
+                maxVelocity 1.0
+                maxPosition 1.1
+                maxForce 100.0
+              }
+              PositionSensor {
+                name "joint_lift_sensor"
+              }
+            ]
+            endPoint Solid {
+              translation -0.036922 0.165471 -0.000342
+              rotation -0.580912 0.575561 0.575561 2.089061
+              children [
+                Shape {
+                  appearance DEF link_lift_material PBRAppearance {
+                    baseColor 0.792157 0.819608 0.933333
+                    roughness 1.000000
+                    metalness 0
+                  }
+                  geometry DEF link_lift Mesh {
+                    url "../meshes/link_lift.STL"
+                  }
+                }
+                Solid {
+                  translation -0.254710 0.000000 0.000000
+                  rotation 0.577350 -0.577352 -0.577350 2.094399
+                  children [
+                    Shape {
+                      appearance DEF link_arm_l4_material PBRAppearance {
+                        baseColor 0.792157 0.819608 0.933333
+                        roughness 1.000000
+                        metalness 0
+                      }
+                      geometry DEF link_arm_l4 Mesh {
+                        url "../meshes/link_arm_l4.STL"
+                      }
+                    }
+                    SliderJoint {
+                      jointParameters JointParameters {
+                        axis 0.000000 0.000000 1.000000
+                      }
+                      device [
+                        LinearMotor {
+                          name "joint_arm_l3"
+                          maxVelocity 1.0
+                          maxPosition 0.13
+                          maxForce 100.0
+                        }
+                        PositionSensor {
+                          name "joint_arm_l3_sensor"
+                        }
+                      ]
+                      endPoint Solid {
+                        translation 0.000000 0.000000 0.013000
+                        children [
+                          Shape {
+                            appearance DEF link_arm_l3_material PBRAppearance {
+                              baseColor 0.792157 0.819608 0.933333
+                              roughness 1.000000
+                              metalness 0
+                            }
+                            geometry DEF link_arm_l3 Mesh {
+                              url "../meshes/link_arm_l3.STL"
+                            }
+                          }
+                          SliderJoint {
+                            jointParameters JointParameters {
+                              axis 0.000000 0.000000 1.000000
+                            }
+                            device [
+                              LinearMotor {
+                                name "joint_arm_l2"
+                                maxVelocity 1.0
+                                maxPosition 0.13
+                                maxForce 100.0
+                              }
+                              PositionSensor {
+                                name "joint_arm_l2_sensor"
+                              }
+                            ]
+                            endPoint Solid {
+                              translation 0.000000 0.000000 0.013000
+                              children [
+                                Shape {
+                                  appearance DEF link_arm_l2_material PBRAppearance {
+                                    baseColor 0.792157 0.819608 0.933333
+                                    roughness 1.000000
+                                    metalness 0
+                                  }
+                                  geometry DEF link_arm_l2 Mesh {
+                                    url "../meshes/link_arm_l2.STL"
+                                  }
+                                }
+                                SliderJoint {
+                                  jointParameters JointParameters {
+                                    axis 0.000000 0.000000 1.000000
+                                  }
+                                  device [
+                                    LinearMotor {
+                                      name "joint_arm_l1"
+                                      maxVelocity 1.0
+                                      maxPosition 0.13
+                                      maxForce 100.0
+                                    }
+                                    PositionSensor {
+                                      name "joint_arm_l1_sensor"
+                                    }
+                                  ]
+                                  endPoint Solid {
+                                    translation 0.000000 0.000000 0.013000
+                                    children [
+                                      Shape {
+                                        appearance DEF link_arm_l1_material PBRAppearance {
+                                          baseColor 0.792157 0.819608 0.933333
+                                          roughness 1.000000
+                                          metalness 0
+                                        }
+                                        geometry DEF link_arm_l1 Mesh {
+                                          url "../meshes/link_arm_l1.STL"
+                                        }
+                                      }
+                                      SliderJoint {
+                                        jointParameters JointParameters {
+                                          axis 0.000000 0.000000 1.000000
+                                        }
+                                        device [
+                                          LinearMotor {
+                                            name "joint_arm_l0"
+                                            maxVelocity 1.0
+                                            maxPosition 0.13
+                                            maxForce 100.0
+                                          }
+                                          PositionSensor {
+                                            name "joint_arm_l0_sensor"
+                                          }
+                                        ]
+                                        endPoint Solid {
+                                          translation 0.000000 0.000000 -0.013750
+                                          children [
+                                            Shape {
+                                              appearance DEF link_arm_l0_material PBRAppearance {
+                                                baseColor 0.792157 0.819608 0.933333
+                                                roughness 1.000000
+                                                metalness 0
+                                              }
+                                              geometry DEF link_arm_l0 Mesh {
+                                                url "../meshes/link_arm_l0.STL"
+                                              }
+                                            }
+                                            HingeJoint {
+                                              jointParameters HingeJointParameters {
+                                                axis -0.000000 1.000000 0.000004
+                                                anchor 0.083000 -0.030750 0.000000
+                                              }
+                                              device [
+                                                RotationalMotor {
+                                                  name "joint_wrist_yaw"
+                                                  maxVelocity 1.0
+                                                  minPosition -1.75
+                                                  maxPosition 4.0
+                                                  maxTorque 100.0
+                                                }
+                                                PositionSensor {
+                                                  name "joint_wrist_yaw_sensor"
+                                                }
+                                              ]
+                                              endPoint Solid {
+                                                translation 0.083000 -0.030750 0.000000
+                                                rotation 1.000000 0.000000 -0.000000 1.570800
+                                                children [
+                                                  Shape {
+                                                    appearance DEF link_wrist_yaw_material PBRAppearance {
+                                                      baseColor 0.792157 0.819608 0.933333
+                                                      roughness 1.000000
+                                                      metalness 0
+                                                    }
+                                                    geometry DEF link_wrist_yaw Mesh {
+                                                      url "../meshes/link_wrist_yaw.STL"
+                                                    }
+                                                  }
+                                                  Solid {
+                                                    rotation -0.707107 -0.707107 0.000000 3.141593
+                                                    children [
+                                                      Shape {
+                                                        appearance DEF link_wrist_yaw_bottom_material PBRAppearance {
+                                                          baseColor 0.792157 0.819608 0.933333
+                                                          roughness 1.000000
+                                                          metalness 0
+                                                        }
+                                                        geometry DEF link_wrist_yaw_bottom Mesh {
+                                                          url "../meshes/link_wrist_yaw_bottom.STL"
+                                                        }
+                                                      }
+                                                      HingeJoint {
+                                                        jointParameters HingeJointParameters {
+                                                          axis 0.000000 -1.000000 0.000000
+                                                          anchor 0.000000 -0.019550 -0.024750
+                                                        }
+                                                        device [
+                                                          RotationalMotor {
+                                                            name "joint_wrist_pitch"
+                                                            maxVelocity 1.0
+                                                            minPosition -1.57
+                                                            maxPosition 0.56
+                                                            maxTorque 100.0
+                                                          }
+                                                          PositionSensor {
+                                                            name "joint_wrist_pitch_sensor"
+                                                          }
+                                                        ]
+                                                        endPoint Solid {
+                                                          translation 0.000000 -0.019550 -0.024750
+                                                          rotation -0.000000 -0.707107 -0.707107 3.141593
+                                                          children [
+                                                            Shape {
+                                                              appearance DEF link_wrist_pitch_material PBRAppearance {
+                                                                baseColor 0.792157 0.819608 0.933333
+                                                                roughness 1.000000
+                                                                metalness 0
+                                                              }
+                                                              geometry DEF link_wrist_pitch Mesh {
+                                                                url "../meshes/link_wrist_pitch.STL"
+                                                              }
+                                                            }
+                                                            HingeJoint {
+                                                              jointParameters HingeJointParameters {
+                                                                axis -1.000000 -0.000000 0.000000
+                                                                anchor -0.018859 -0.024000 0.019550
+                                                              }
+                                                              device [
+                                                                RotationalMotor {
+                                                                  name "joint_wrist_roll"
+                                                                  maxVelocity 1.0
+                                                                  minPosition -3.14
+                                                                  maxPosition 3.14
+                                                                  maxTorque 100.0
+                                                                }
+                                                                PositionSensor {
+                                                                  name "joint_wrist_roll_sensor"
+                                                                }
+                                                              ]
+                                                              endPoint Solid {
+                                                                translation -0.018859 -0.024000 0.019550
+                                                                rotation 0.707107 0.000000 -0.707107 3.141593
+                                                                children [
+                                                                  Shape {
+                                                                    appearance DEF link_wrist_roll_material PBRAppearance {
+                                                                      baseColor 0.792157 0.819608 0.933333
+                                                                      roughness 1.000000
+                                                                      metalness 0
+                                                                    }
+                                                                    geometry DEF link_wrist_roll Mesh {
+                                                                      url "../meshes/link_wrist_roll.STL"
+                                                                    }
+                                                                  }
+                                                                  Solid {
+                                                                    translation 0.000000 0.000000 0.015500
+                                                                    rotation 0.000000 -0.000000 -1.000000 3.141593
+                                                                    children [
+                                                                      Shape {
+                                                                        appearance DEF link_straight_gripper_material PBRAppearance {
+                                                                          baseColor 0.792157 0.819608 0.933333
+                                                                          roughness 1.000000
+                                                                          metalness 0
+                                                                        }
+                                                                        geometry DEF link_straight_gripper Mesh {
+                                                                          url "../meshes/link_straight_gripper.STL"
+                                                                        }
+                                                                      }
+                                                                      HingeJoint {
+                                                                        jointParameters HingeJointParameters {
+                                                                          axis -0.000004 -1.000000 0.000000
+                                                                          anchor -0.018599 0.003000 0.033689
+                                                                        }
+                                                                        device [
+                                                                          RotationalMotor {
+                                                                            name "joint_gripper_finger_right"
+                                                                            maxVelocity 1.0
+                                                                            minPosition -0.6
+                                                                            maxPosition 0.6
+                                                                            maxTorque 100.0
+                                                                          }
+                                                                          PositionSensor {
+                                                                            name "joint_gripper_finger_right_sensor"
+                                                                          }
+                                                                        ]
+                                                                        endPoint Solid {
+                                                                          translation -0.018599 0.003000 0.033689
+                                                                          rotation 0.577350 0.577350 -0.577352 2.094399
+                                                                          children [
+                                                                            Shape {
+                                                                              appearance DEF link_gripper_finger_right_material PBRAppearance {
+                                                                                baseColor 0.792160 0.819610 0.933330
+                                                                                roughness 1.000000
+                                                                                metalness 0
+                                                                              }
+                                                                              geometry DEF link_gripper_finger_right Mesh {
+                                                                                url "../meshes/link_gripper_finger_right.STL"
+                                                                              }
+                                                                            }
+                                                                            Solid {
+                                                                              translation -0.190597 -0.015000 0.000000
+                                                                              rotation -0.931104 -0.257919 0.257919 1.642120
+                                                                              children [
+                                                                                Shape {
+                                                                                  appearance DEF link_gripper_fingertip_right_material PBRAppearance {
+                                                                                    baseColor 0.250980 0.250980 0.250980
+                                                                                    roughness 1.000000
+                                                                                    metalness 0
+                                                                                  }
+                                                                                  geometry DEF link_gripper_fingertip_right Mesh {
+                                                                                    url "../meshes/link_gripper_fingertip_right.STL"
+                                                                                  }
+                                                                                }
+                                                                              ]
+                                                                              name "link_gripper_fingertip_right"
+                                                                              boundingObject USE link_gripper_fingertip_right
+                                                                              physics Physics {
+                                                                                density -1
+                                                                                mass 0.003822
+                                                                                centerOfMass [ 0.000000 0.000000 0.008126 ]
+                                                                                inertiaMatrix [
+                                                                                  1.000000e-03 1.000000e-03 1.000000e-03
+                                                                                  0.000000e+00 0.000000e+00 0.000000e+00
+                                                                                ]
+                                                                              }
+                                                                            }
+                                                                          ]
+                                                                          name "link_gripper_finger_right"
+                                                                          boundingObject USE link_gripper_finger_right
+                                                                          physics Physics {
+                                                                            density -1
+                                                                            mass 0.047621
+                                                                            centerOfMass [ -0.094981 -0.008015 -0.000000 ]
+                                                                            inertiaMatrix [
+                                                                              1.000000e-03 1.000000e-03 1.000000e-03
+                                                                              0.000000e+00 0.000000e+00 0.000000e+00
+                                                                            ]
+                                                                          }
+                                                                        }
+                                                                      }
+                                                                      HingeJoint {
+                                                                        jointParameters HingeJointParameters {
+                                                                          axis -0.000004 1.000000 -0.000000
+                                                                          anchor 0.018599 0.003000 0.033689
+                                                                        }
+                                                                        device [
+                                                                          RotationalMotor {
+                                                                            name "joint_gripper_finger_left"
+                                                                            maxVelocity 1.0
+                                                                            minPosition -0.6
+                                                                            maxPosition 0.6
+                                                                            maxTorque 100.0
+                                                                          }
+                                                                          PositionSensor {
+                                                                            name "joint_gripper_finger_left_sensor"
+                                                                          }
+                                                                        ]
+                                                                        endPoint Solid {
+                                                                          translation 0.018599 0.003000 0.033689
+                                                                          rotation 0.577350 -0.577350 0.577352 2.094399
+                                                                          children [
+                                                                            Pose {
+                                                                              rotation 1.000000 0.000000 0.000000 3.141593
+                                                                              children [
+                                                                                Shape {
+                                                                                  appearance DEF link_gripper_finger_left_material PBRAppearance {
+                                                                                    baseColor 0.792157 0.819608 0.933333
+                                                                                    roughness 1.000000
+                                                                                    metalness 0
+                                                                                  }
+                                                                                  geometry DEF link_gripper_finger_left Mesh {
+                                                                                    url "../meshes/link_gripper_finger_left.STL"
+                                                                                  }
+                                                                                }
+                                                                              ]
+                                                                            }
+                                                                            Solid {
+                                                                              translation 0.190597 -0.015000 0.000000
+                                                                              rotation 0.192219 0.693921 0.693921 2.761788
+                                                                              children [
+                                                                                Shape {
+                                                                                  appearance DEF link_gripper_fingertip_left_material PBRAppearance {
+                                                                                    baseColor 0.250980 0.250980 0.250980
+                                                                                    roughness 1.000000
+                                                                                    metalness 0
+                                                                                  }
+                                                                                  geometry DEF link_gripper_fingertip_left Mesh {
+                                                                                    url "../meshes/link_gripper_fingertip_left.STL"
+                                                                                  }
+                                                                                }
+                                                                              ]
+                                                                              name "link_gripper_fingertip_left"
+                                                                              boundingObject USE link_gripper_fingertip_left
+                                                                              physics Physics {
+                                                                                density -1
+                                                                                mass 0.003822
+                                                                                centerOfMass [ -0.000000 -0.000000 0.008126 ]
+                                                                                inertiaMatrix [
+                                                                                  1.000000e-03 1.000000e-03 1.000000e-03
+                                                                                  0.000000e+00 0.000000e+00 0.000000e+00
+                                                                                ]
+                                                                              }
+                                                                            }
+                                                                          ]
+                                                                          name "link_gripper_finger_left"
+                                                                          boundingObject USE link_gripper_finger_left
+                                                                          physics Physics {
+                                                                            density -1
+                                                                            mass 0.047621
+                                                                            centerOfMass [ 0.094981 -0.008015 0.000000 ]
+                                                                            inertiaMatrix [
+                                                                              1.000000e-03 1.000000e-03 1.000000e-03
+                                                                              0.000000e+00 0.000000e+00 0.000000e+00
+                                                                            ]
+                                                                          }
+                                                                        }
+                                                                      }
+                                                                    ]
+                                                                    name "link_straight_gripper"
+                                                                    boundingObject USE link_straight_gripper
+                                                                    physics Physics {
+                                                                      density -1
+                                                                      mass 0.049638
+                                                                      centerOfMass [ 0.001508 -0.007116 0.039974 ]
+                                                                      inertiaMatrix [
+                                                                        5.614612e-06 1.115047e-05 6.638034e-06
+                                                                        8.295190e-07 -2.413829e-06 9.761749e-07
+                                                                      ]
+                                                                    }
+                                                                  }
+                                                                ]
+                                                                name "link_wrist_roll"
+                                                                boundingObject USE link_wrist_roll
+                                                                physics Physics {
+                                                                  density -1
+                                                                  mass 0.005857
+                                                                  centerOfMass [ 0.000000 -0.000000 0.007680 ]
+                                                                  inertiaMatrix [
+                                                                    2.559656e-06 3.439686e-06 4.535687e-06
+                                                                    -1.475515e-06 -6.314361e-08 -4.178136e-07
+                                                                  ]
+                                                                }
+                                                              }
+                                                            }
+                                                          ]
+                                                          name "link_wrist_pitch"
+                                                          boundingObject USE link_wrist_pitch
+                                                          physics Physics {
+                                                            density -1
+                                                            mass 0.070127
+                                                            centerOfMass [ -0.003106 -0.015078 0.020473 ]
+                                                            inertiaMatrix [
+                                                              2.559656e-06 3.439686e-06 4.535687e-06
+                                                              -1.475515e-06 -6.314361e-08 -4.178136e-07
+                                                            ]
+                                                          }
+                                                        }
+                                                      }
+                                                    ]
+                                                    name "link_wrist_yaw_bottom"
+                                                    boundingObject USE link_wrist_yaw_bottom
+                                                    physics Physics {
+                                                      density -1
+                                                      mass 0.098891
+                                                      centerOfMass [ -0.012839 -0.038279 -0.022840 ]
+                                                      inertiaMatrix [
+                                                        2.600679e-05 5.994829e-06 2.569071e-05
+                                                        -6.731763e-06 -2.434764e-06 -3.396424e-06
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
+                                                name "link_wrist_yaw"
+                                                boundingObject USE link_wrist_yaw
+                                                physics Physics {
+                                                  density -1
+                                                  mass 0.040540
+                                                  centerOfMass [ -0.000008 0.000019 0.018947 ]
+                                                  inertiaMatrix [
+                                                    1.000000e-03 1.000000e-03 1.000000e-03
+                                                    0.000000e+00 0.000000e+00 0.000000e+00
+                                                  ]
+                                                }
+                                              }
+                                            }
+                                            Solid {
+                                              translation 0.047250 0.029285 0.000000
+                                              rotation 0.000000 0.707107 0.707107 3.141593
+                                              children [
+                                                Shape {
+                                                  appearance DEF link_aruco_top_wrist_material PBRAppearance {
+                                                    baseColor 0.792157 0.819608 0.933333
+                                                    roughness 1.000000
+                                                    metalness 0
+                                                  }
+                                                  geometry DEF link_aruco_top_wrist Mesh {
+                                                    url "../meshes/link_aruco_top_wrist.STL"
+                                                  }
+                                                }
+                                              ]
+                                              name "link_aruco_top_wrist"
+                                              boundingObject USE link_aruco_top_wrist
+                                              physics Physics {
+                                                density -1
+                                                mass 0.000000
+                                                centerOfMass [ 0.000000 0.000000 -0.000125 ]
+                                              }
+                                            }
+                                            Solid {
+                                              translation 0.047250 -0.011900 -0.027250
+                                              rotation 0.000000 1.000000 0.000000 3.141593
+                                              children [
+                                                Shape {
+                                                  appearance DEF link_aruco_inner_wrist_material PBRAppearance {
+                                                    baseColor 0.792157 0.819608 0.933333
+                                                    roughness 1.000000
+                                                    metalness 0
+                                                  }
+                                                  geometry DEF link_aruco_inner_wrist Mesh {
+                                                    url "../meshes/link_aruco_inner_wrist.STL"
+                                                  }
+                                                }
+                                              ]
+                                              name "link_aruco_inner_wrist"
+                                              boundingObject USE link_aruco_inner_wrist
+                                              physics Physics {
+                                                density -1
+                                                mass 0.000000
+                                                centerOfMass [ 0.000000 0.000000 -0.000125 ]
+                                              }
+                                            }
+                                          ]
+                                          name "link_arm_l0"
+                                          boundingObject USE link_arm_l0
+                                          physics Physics {
+                                            density -1
+                                            mass 0.101241
+                                            centerOfMass [ 0.023072 -0.001951 -0.036065 ]
+                                            inertiaMatrix [
+                                              1.000000e-03 1.000000e-03 1.000000e-03
+                                              0.000000e+00 0.000000e+00 0.000000e+00
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    ]
+                                    name "link_arm_l1"
+                                    boundingObject USE link_arm_l1
+                                    physics Physics {
+                                      density -1
+                                      mass 0.051176
+                                      centerOfMass [ -0.000000 0.000000 -0.096912 ]
+                                      inertiaMatrix [
+                                        1.000000e-03 1.000000e-03 1.000000e-03
+                                        0.000000e+00 0.000000e+00 0.000000e+00
+                                      ]
+                                    }
+                                  }
+                                }
+                              ]
+                              name "link_arm_l2"
+                              boundingObject USE link_arm_l2
+                              physics Physics {
+                                density -1
+                                mass 0.056907
+                                centerOfMass [ -0.000000 0.000000 -0.097256 ]
+                                inertiaMatrix [
+                                  1.000000e-03 1.000000e-03 1.000000e-03
+                                  0.000000e+00 0.000000e+00 0.000000e+00
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                        name "link_arm_l3"
+                        boundingObject USE link_arm_l3
+                        physics Physics {
+                          density -1
+                          mass 0.062692
+                          centerOfMass [ -0.000000 0.000000 -0.097407 ]
+                          inertiaMatrix [
+                            1.000000e-03 1.000000e-03 1.000000e-03
+                            0.000000e+00 0.000000e+00 0.000000e+00
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                  name "link_arm_l4"
+                  boundingObject USE link_arm_l4
+                  physics Physics {
+                    density -1
+                    mass 0.067653
+                    centerOfMass [ -0.000002 0.000002 -0.095325 ]
+                    inertiaMatrix [
+                      1.220020e-04 1.220020e-04 1.460434e-12
+                      7.295934e-13 9.631704e-09 -9.241549e-09
+                    ]
+                  }
+                }
+                Solid {
+                  translation -0.013377 0.055854 0.086137
+                  children [
+                    Shape {
+                      appearance DEF link_aruco_shoulder_material PBRAppearance {
+                        baseColor 0.792157 0.819608 0.933333
+                        roughness 1.000000
+                        metalness 0
+                      }
+                      geometry DEF link_aruco_shoulder Mesh {
+                        url "../meshes/link_aruco_shoulder.STL"
+                      }
+                    }
+                  ]
+                  name "link_aruco_shoulder"
+                  boundingObject USE link_aruco_shoulder
+                  physics Physics {
+                    density -1
+                    mass 0.000000
+                    centerOfMass [ -0.000000 0.000000 -0.000125 ]
+                  }
+                }
+              ]
+              name "link_lift"
+              boundingObject USE link_lift
+              physics Physics {
+                density -1
+                mass 0.444821
+                centerOfMass [ -0.054764 0.038094 0.009332 ]
+                inertiaMatrix [
+                  5.671929e-04 1.271084e-03 1.372966e-03
+                  -2.460753e-04 -1.281084e-04 7.619169e-06
+                ]
+              }
+            }
+          }
+          Solid {
+            translation 0.000000 1.330000 0.000000
+            rotation 0.573770 0.579135 0.579129 4.183421
+            children [
+              Shape {
+                appearance DEF link_head_material PBRAppearance {
+                  baseColor 0.792157 0.819608 0.933333
+                  roughness 1.000000
+                  metalness 0
+                }
+                geometry DEF link_head Mesh {
+                  url "../meshes/link_head.STL"
+                }
+              }
+              HingeJoint {
+                jointParameters HingeJointParameters {
+                  axis -0.000000 -0.000000 1.000000
+                  anchor 0.135000 0.073100 -0.003000
+                }
+                device [
+                  RotationalMotor {
+                    name "joint_head_pan"
+                    maxVelocity 1.0
+                    minPosition -3.9
+                    maxPosition 1.5
+                    maxTorque 100.0
+                  }
+                  PositionSensor {
+                    name "joint_head_pan_sensor"
+                  }
+                ]
+                endPoint Solid {
+                  translation 0.135000 0.073100 -0.003000
+                  rotation -0.000000 -0.000000 1.000000 1.570800
+                  children [
+                    Shape {
+                      appearance DEF link_head_pan_material PBRAppearance {
+                        baseColor 0.792157 0.819608 0.933333
+                        roughness 1.000000
+                        metalness 0
+                      }
+                      geometry DEF link_head_pan Mesh {
+                        url "../meshes/link_head_pan.STL"
+                      }
+                    }
+                    HingeJoint {
+                      jointParameters HingeJointParameters {
+                        axis -0.000000 -1.000000 -0.000004
+                        anchor -0.001300 0.027507 -0.053311
+                      }
+                      device [
+                        RotationalMotor {
+                          name "joint_head_tilt"
+                          maxVelocity 1.0
+                          minPosition -1.53
+                          maxPosition 0.79
+                          maxTorque 100.0
+                        }
+                        PositionSensor {
+                          name "joint_head_tilt_sensor"
+                        }
+                      ]
+                      endPoint Solid {
+                        translation -0.001300 0.027507 -0.053311
+                        rotation 1.000000 -0.000000 -0.000000 1.570800
+                        children [
+                          Shape {
+                            appearance DEF link_head_tilt_material PBRAppearance {
+                              baseColor 0.792157 0.819608 0.933333
+                              roughness 1.000000
+                              metalness 0
+                            }
+                            geometry DEF link_head_tilt Mesh {
+                              url "../meshes/link_head_tilt.STL"
+                            }
+                          }
+                          Solid {
+                            translation 0.040600 0.005300 0.030700
+                            children [
+                              Pose {
+                                translation 0.004300 -0.017500 0.000000
+                                rotation 0.577350 0.577350 0.577350 2.094395
+                                children [
+                                  DEF d435_visual CadShape {
+                                    url "../meshes/realsense2/d435.dae"
+                                  }
+                                ]
+                              }
+                            ]
+                            name "camera_link"
+                            boundingObject Box {
+                               size 0.025050 0.090000 0.025000
+                            }
+                            physics Physics {
+                              density -1
+                              mass 0.072000
+                              centerOfMass [ 0.000000 0.000000 0.000000 ]
+                              inertiaMatrix [
+                                3.881243e-03 4.989400e-04 3.879257e-03
+                                0.000000e+00 0.000000e+00 0.000000e+00
+                              ]
+                            }
+                          }
+                        ]
+                        name "link_head_tilt"
+                        boundingObject USE link_head_tilt
+                        physics Physics {
+                          density -1
+                          mass 0.070124
+                          centerOfMass [ 0.009202 -0.027972 0.030658 ]
+                          inertiaMatrix [
+                            1.000000e-03 1.000000e-03 1.000000e-03
+                            0.000000e+00 0.000000e+00 0.000000e+00
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                  name "link_head_pan"
+                  boundingObject USE link_head_pan
+                  physics Physics {
+                    density -1
+                    mass 0.035858
+                    centerOfMass [ -0.001162 0.013037 0.001376 ]
+                    inertiaMatrix [
+                      1.000000e-03 1.000000e-03 1.000000e-03
+                      0.000000e+00 0.000000e+00 0.000000e+00
+                    ]
+                  }
+                }
+              }
+            ]
+            name "link_head"
+            boundingObject USE link_head
+            physics Physics {
+              density -1
+              mass 0.129455
+              centerOfMass [ 0.037293 0.045509 0.028114 ]
+              inertiaMatrix [
+                1.000000e-03 1.000000e-03 1.000000e-03
+                0.000000e+00 0.000000e+00 0.000000e+00
+              ]
+            }
+          }
+          Solid {
+            translation 0.000011 1.369920 0.003036
+            rotation 0.000000 0.707107 0.707107 3.141593
+            children [
+              Shape {
+                appearance DEF respeaker_base_material PBRAppearance {
+                  baseColor 0.792157 0.819608 0.933333
+                  roughness 1.000000
+                  metalness 0
+                }
+                geometry DEF link_respeaker Mesh {
+                  url "../meshes/link_respeaker.STL"
+                }
+              }
+            ]
+            name "respeaker_base"
+            boundingObject USE link_respeaker
+            physics Physics {
+              density -1
+              mass 0.009691
+              centerOfMass [ -0.000781 0.007657 -0.004249 ]
+              inertiaMatrix [
+                8.956563e-07 4.042110e-07 7.082826e-07
+                2.673307e-08 -3.845198e-08 3.155335e-07
+              ]
+            }
+          }
+        ]
+        name "link_mast"
+        boundingObject USE link_mast
+        physics Physics {
+          density -1
+          mass 0.749143
+          centerOfMass [ 0.007558 0.773971 0.006473 ]
+          inertiaMatrix [
+            7.098545e-02 4.379221e-04 7.110481e-02
+            -4.334287e-03 -1.861108e-04 -2.887883e-03
+          ]
+        }
+      }
+      Solid {
+        translation -0.005000 -0.130497 0.159748
+        rotation 0.000000 0.000000 -1.000000 1.570796
+        children [
+          Shape {
+            appearance DEF link_aruco_right_base_material PBRAppearance {
+              baseColor 0.792157 0.819608 0.933333
+              roughness 1.000000
+              metalness 0
+            }
+            geometry DEF link_aruco_right_base Mesh {
+              url "../meshes/link_aruco_right_base.STL"
+            }
+          }
+        ]
+        name "link_aruco_right_base"
+        boundingObject USE link_aruco_right_base
+        physics Physics {
+          density -1
+          mass 0.000004
+        }
+      }
+      Solid {
+        translation -0.005000 0.130497 0.159748
+        rotation 0.000000 0.000000 -1.000000 1.570796
+        children [
+          Shape {
+            appearance DEF link_aruco_left_base_material PBRAppearance {
+              baseColor 0.792157 0.819608 0.933333
+              roughness 1.000000
+              metalness 0
+            }
+            geometry DEF link_aruco_left_base Mesh {
+              url "../meshes/link_aruco_left_base.STL"
+            }
+          }
+        ]
+        name "link_aruco_left_base"
+        boundingObject USE link_aruco_left_base
+        physics Physics {
+          density -1
+          mass 0.000004
+        }
+      }
+      Solid {
+        translation 0.000503 0.000000 0.166400
+        rotation 0.000000 0.000000 -1.000000 3.141593
+        children [
+          Shape {
+            appearance DEF laser_material PBRAppearance {
+              baseColor 0.250980 0.250980 0.250980
+              roughness 1.000000
+              metalness 0
+            }
+            geometry DEF laser Mesh {
+              url "../meshes/laser.STL"
+            }
+          }
+        ]
+        name "laser"
+        boundingObject USE laser
+        physics Physics {
+          density -1
+          mass 0.074998
+        }
+      }
+    ]
+    name IS name
+    boundingObject USE base_link
+    physics Physics {
+      density -1
+      mass 1.072378
+      centerOfMass [ -0.109461 -0.000741 0.091492 ]
+      inertiaMatrix [
+        3.105809e-03 4.337987e-03 3.720473e-03
+        1.518285e-06 4.169047e-04 1.334877e-05
+      ]
+    }
+  }
+}

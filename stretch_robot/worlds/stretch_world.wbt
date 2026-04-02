@@ -1,0 +1,40 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "../protos/Stretch.proto"
+
+WorldInfo {
+  title "Hello Robot Stretch - Webots"
+  info [
+    "Stretch robot (Hello Robot) imported from URDF"
+    "URDF source: facebookresearch/home-robot"
+    "Meshes: hello-robot/stretch_ros"
+  ]
+  basicTimeStep 16
+}
+
+Viewpoint {
+  orientation -0.35 0.6 0.72 1.2
+  position -2.5 -2.5 2.0
+}
+
+TexturedBackground {
+}
+
+TexturedBackgroundLight {
+}
+
+RectangleArena {
+  floorSize 5 5
+  floorTileSize 0.5 0.5
+  wallHeight 0.05
+}
+
+Stretch {
+  translation 0 0 0
+  rotation 0 0 1 0
+  name "stretch"
+  controller "void"
+}
