@@ -69,7 +69,7 @@ PROTO Stretch [
             }
           ]
           name "link_right_wheel"
-          boundingObject USE link_right_wheel
+          boundingObject Cylinder { radius 0.051 height 0.050 }
           physics Physics {
             density -1
             mass 0.010000
@@ -114,7 +114,7 @@ PROTO Stretch [
             }
           ]
           name "link_left_wheel"
-          boundingObject USE link_left_wheel
+          boundingObject Cylinder { radius 0.051 height 0.050 }
           physics Physics {
             density -1
             mass 0.010000
@@ -492,7 +492,7 @@ PROTO Stretch [
                                                                                 }
                                                                               ]
                                                                               name "link_gripper_fingertip_right"
-                                                                              boundingObject USE link_gripper_fingertip_right
+                                                                              boundingObject Box { size 0.02 0.03 0.06 }
                                                                               physics Physics {
                                                                                 density -1
                                                                                 mass 0.003822
@@ -505,7 +505,7 @@ PROTO Stretch [
                                                                             }
                                                                           ]
                                                                           name "link_gripper_finger_right"
-                                                                          boundingObject USE link_gripper_finger_right
+                                                                          boundingObject Box { size 0.02 0.04 0.08 }
                                                                           physics Physics {
                                                                             density -1
                                                                             mass 0.047621
@@ -569,7 +569,7 @@ PROTO Stretch [
                                                                                 }
                                                                               ]
                                                                               name "link_gripper_fingertip_left"
-                                                                              boundingObject USE link_gripper_fingertip_left
+                                                                              boundingObject Box { size 0.02 0.03 0.06 }
                                                                               physics Physics {
                                                                                 density -1
                                                                                 mass 0.003822
@@ -582,7 +582,7 @@ PROTO Stretch [
                                                                             }
                                                                           ]
                                                                           name "link_gripper_finger_left"
-                                                                          boundingObject USE link_gripper_finger_left
+                                                                          boundingObject Box { size 0.02 0.04 0.08 }
                                                                           physics Physics {
                                                                             density -1
                                                                             mass 0.047621
@@ -596,7 +596,7 @@ PROTO Stretch [
                                                                       }
                                                                     ]
                                                                     name "link_straight_gripper"
-                                                                    boundingObject USE link_straight_gripper
+                                                                    boundingObject Box { size 0.04 0.04 0.12 }
                                                                     physics Physics {
                                                                       density -1
                                                                       mass 0.049638
@@ -609,7 +609,7 @@ PROTO Stretch [
                                                                   }
                                                                 ]
                                                                 name "link_wrist_roll"
-                                                                boundingObject USE link_wrist_roll
+                                                                boundingObject Box { size 0.05 0.05 0.05 }
                                                                 physics Physics {
                                                                   density -1
                                                                   mass 0.005857
@@ -623,7 +623,7 @@ PROTO Stretch [
                                                             }
                                                           ]
                                                           name "link_wrist_pitch"
-                                                          boundingObject USE link_wrist_pitch
+                                                          boundingObject Box { size 0.05 0.06 0.08 }
                                                           physics Physics {
                                                             density -1
                                                             mass 0.070127
@@ -637,7 +637,7 @@ PROTO Stretch [
                                                       }
                                                     ]
                                                     name "link_wrist_yaw_bottom"
-                                                    boundingObject USE link_wrist_yaw_bottom
+                                                    boundingObject Box { size 0.12 0.06 0.06 }_bottom
                                                     physics Physics {
                                                       density -1
                                                       mass 0.098891
@@ -650,7 +650,7 @@ PROTO Stretch [
                                                   }
                                                 ]
                                                 name "link_wrist_yaw"
-                                                boundingObject USE link_wrist_yaw
+                                                boundingObject Box { size 0.12 0.06 0.06 }
                                                 physics Physics {
                                                   density -1
                                                   mass 0.040540
@@ -678,7 +678,6 @@ PROTO Stretch [
                                                 }
                                               ]
                                               name "link_aruco_top_wrist"
-                                              boundingObject USE link_aruco_top_wrist
                                             }
                                             Solid {
                                               translation 0.047250 -0.011900 -0.027250
@@ -696,11 +695,10 @@ PROTO Stretch [
                                                 }
                                               ]
                                               name "link_aruco_inner_wrist"
-                                              boundingObject USE link_aruco_inner_wrist
                                             }
                                           ]
                                           name "link_arm_l0"
-                                          boundingObject USE link_arm_l0
+                                          boundingObject Box { size 0.28 0.06 0.06 }
                                           physics Physics {
                                             density -1
                                             mass 0.101241
@@ -714,7 +712,7 @@ PROTO Stretch [
                                       }
                                     ]
                                     name "link_arm_l1"
-                                    boundingObject USE link_arm_l1
+                                    boundingObject Box { size 0.14 0.05 0.05 }
                                     physics Physics {
                                       density -1
                                       mass 0.051176
@@ -728,7 +726,7 @@ PROTO Stretch [
                                 }
                               ]
                               name "link_arm_l2"
-                              boundingObject USE link_arm_l2
+                              boundingObject Box { size 0.14 0.05 0.05 }
                               physics Physics {
                                 density -1
                                 mass 0.056907
@@ -742,7 +740,7 @@ PROTO Stretch [
                           }
                         ]
                         name "link_arm_l3"
-                        boundingObject USE link_arm_l3
+                        boundingObject Box { size 0.14 0.05 0.05 }
                         physics Physics {
                           density -1
                           mass 0.062692
@@ -756,7 +754,7 @@ PROTO Stretch [
                     }
                   ]
                   name "link_arm_l4"
-                  boundingObject USE link_arm_l4
+                  boundingObject Box { size 0.14 0.06 0.06 }
                   physics Physics {
                     density -1
                     mass 0.067653
@@ -782,11 +780,11 @@ PROTO Stretch [
                     }
                   ]
                   name "link_aruco_shoulder"
-                  boundingObject USE link_aruco_shoulder
+          
                 }
               ]
               name "link_lift"
-              boundingObject USE link_lift
+              boundingObject Box { size 0.35 0.12 0.12 }
               physics Physics {
                 density -1
                 mass 0.444821
@@ -903,7 +901,7 @@ PROTO Stretch [
                           }
                         ]
                         name "link_head_tilt"
-                        boundingObject USE link_head_tilt
+                        boundingObject Box { size 0.16 0.22 0.18 }_tilt
                         physics Physics {
                           density -1
                           mass 0.070124
@@ -917,7 +915,7 @@ PROTO Stretch [
                     }
                   ]
                   name "link_head_pan"
-                  boundingObject USE link_head_pan
+                  boundingObject Box { size 0.16 0.22 0.18 }_pan
                   physics Physics {
                     density -1
                     mass 0.035858
@@ -931,7 +929,7 @@ PROTO Stretch [
               }
             ]
             name "link_head"
-            boundingObject USE link_head
+            boundingObject Box { size 0.16 0.22 0.18 }
             physics Physics {
               density -1
               mass 0.129455
@@ -959,7 +957,7 @@ PROTO Stretch [
               }
             ]
             name "respeaker_base"
-            boundingObject USE link_respeaker
+            boundingObject Box { size 0.08 0.08 0.03 }
             physics Physics {
               density -1
               mass 0.009691
@@ -972,7 +970,7 @@ PROTO Stretch [
           }
         ]
         name "link_mast"
-        boundingObject USE link_mast
+        boundingObject Box { size 0.07 0.07 1.40 }
         physics Physics {
           density -1
           mass 0.749143
@@ -999,7 +997,7 @@ PROTO Stretch [
           }
         ]
         name "link_aruco_right_base"
-        boundingObject USE link_aruco_right_base
+
       }
       Solid {
         translation -0.005000 0.130497 0.159748
@@ -1017,7 +1015,7 @@ PROTO Stretch [
           }
         ]
         name "link_aruco_left_base"
-        boundingObject USE link_aruco_left_base
+
       }
       Solid {
         translation 0.000503 0.000000 0.166400
@@ -1035,7 +1033,7 @@ PROTO Stretch [
           }
         ]
         name "laser"
-        boundingObject USE laser
+        boundingObject Cylinder { radius 0.05 height 0.04 }
         physics Physics {
           density -1
           mass 0.074998
@@ -1043,7 +1041,12 @@ PROTO Stretch [
       }
     ]
     name IS name
-    boundingObject USE base_link
+    boundingObject Transform {
+          translation 0 0 0.12
+          children [
+            Box { size 0.34 0.34 0.24 }
+          ]
+        }
     physics Physics {
       density -1
       mass 1.072378

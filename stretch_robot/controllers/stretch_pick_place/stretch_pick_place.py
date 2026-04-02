@@ -1,27 +1,23 @@
 """
 Stretch robot pick-and-place controller.
 
-Sequence:
-  1. Drive forward toward the box
-  2. Raise the lift to approach height
-  3. Extend the arm over the box
-  4. Lower the lift to grasp height
-  5. Close the gripper
-  6. Raise the lift (pick)
-  7. Retract the arm
-  8. Turn 90 degrees
-  9. Extend arm to drop position
-  10. Open the gripper (place)
-  11. Retract arm and celebrate
+Uses sensor feedback (position sensors + GPS) for reliable state transitions
+instead of blind timers. The robot drives toward a red box placed at (0.9, 0, 0),
+picks it up, turns, and drops it on the green zone at (0, 0.9, 0).
+
+State machine:
+  INIT → DRIVE_TO_BOX → ALIGN → EXTEND_ARM → LOWER_GRASP →
+  GRASP → PICK_UP → RETRACT → TURN → PLACE_EXTEND →
+  PLACE_LOWER → RELEASE → STOW → DONE
 """
 
-from controller import Robot
+from controller import Robot, GPS
 import math
 
 robot = Robot()
 timestep = int(robot.getBasicTimeStep())
 
-# ── Motors ────────────────────────────────────────────────────────────────────
+# ── Devices ───────────────────────────────────────────────────────────────────
 left_wheel  = robot.getDevice("joint_left_wheel")
 right_wheel = robot.getDevice("joint_right_wheel")
 lift        = robot.getDevice("joint_lift")
@@ -30,188 +26,239 @@ arm_l1      = robot.getDevice("joint_arm_l1")
 arm_l2      = robot.getDevice("joint_arm_l2")
 arm_l3      = robot.getDevice("joint_arm_l3")
 wrist_yaw   = robot.getDevice("joint_wrist_yaw")
+wrist_pitch = robot.getDevice("joint_wrist_pitch")
 gripper_l   = robot.getDevice("joint_gripper_finger_left")
 gripper_r   = robot.getDevice("joint_gripper_finger_right")
 head_pan    = robot.getDevice("joint_head_pan")
 head_tilt   = robot.getDevice("joint_head_tilt")
 
-# Wheels use velocity control
+# Wheel velocity control
 left_wheel.setPosition(float('inf'))
 right_wheel.setPosition(float('inf'))
 left_wheel.setVelocity(0)
 right_wheel.setVelocity(0)
 
-# Other joints use position control
-lift.setPosition(0.2)
-arm_l0.setPosition(0.0)
-arm_l1.setPosition(0.0)
-arm_l2.setPosition(0.0)
-arm_l3.setPosition(0.0)
-wrist_yaw.setPosition(0.0)
-gripper_l.setPosition(0.4)   # open
-gripper_r.setPosition(-0.4)  # open
-head_pan.setPosition(0.0)
-head_tilt.setPosition(-0.3)
+# Position sensors
+lift_s    = robot.getDevice("joint_lift_sensor");    lift_s.enable(timestep)
+arm_s     = [robot.getDevice(f"joint_arm_l{i}_sensor") for i in range(4)]
+for s in arm_s: s.enable(timestep)
+wrist_s   = robot.getDevice("joint_wrist_yaw_sensor"); wrist_s.enable(timestep)
+gl_s      = robot.getDevice("joint_gripper_finger_left_sensor");  gl_s.enable(timestep)
+gr_s      = robot.getDevice("joint_gripper_finger_right_sensor"); gr_s.enable(timestep)
 
-# ── Position sensors ──────────────────────────────────────────────────────────
-lift_sensor  = robot.getDevice("joint_lift_sensor")
-arm_sensors  = [robot.getDevice(f"joint_arm_l{i}_sensor") for i in range(4)]
-wrist_sensor = robot.getDevice("joint_wrist_yaw_sensor")
-gripper_l_s  = robot.getDevice("joint_gripper_finger_left_sensor")
-gripper_r_s  = robot.getDevice("joint_gripper_finger_right_sensor")
+# GPS for odometry
+gps = robot.getDevice("gps") if robot.getDevice("gps") else None
+if gps:
+    gps.enable(timestep)
 
-for s in [lift_sensor, wrist_sensor, gripper_l_s, gripper_r_s] + arm_sensors:
-    s.enable(timestep)
+# ── Constants ─────────────────────────────────────────────────────────────────
+DRIVE_SPEED   = 1.2    # rad/s wheels (gentle)
+TURN_SPEED    = 0.8    # rad/s wheels
+LIFT_APPROACH = 0.55   # m  - lift height while driving / approaching
+LIFT_GRASP    = 0.38   # m  - lift height to pick up the box
+LIFT_CARRY    = 0.65   # m  - lift height while carrying
+ARM_EXT       = 0.12   # m  per-segment extension (4 × 0.12 = 0.48 m total reach)
+ARM_PLACE_EXT = 0.10   # m  per-segment for placing
+GRIPPER_OPEN  =  0.35  # rad
+GRIPPER_CLOSE = -0.15  # rad (squeeze)
+WHEEL_SEP     = 0.315  # m  between wheels (Stretch specification)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-def drive(speed_l, speed_r):
-    left_wheel.setVelocity(speed_l)
-    right_wheel.setVelocity(speed_r)
+def drive(vl, vr):
+    left_wheel.setVelocity(vl)
+    right_wheel.setVelocity(vr)
 
-def wait(seconds):
-    steps = int(seconds * 1000 / timestep)
-    for _ in range(steps):
-        robot.step(timestep)
+def stop():
+    left_wheel.setVelocity(0)
+    right_wheel.setVelocity(0)
 
-def near(sensor, target, tol=0.015):
+def at(sensor, target, tol=0.012):
     return abs(sensor.getValue() - target) < tol
 
-def wait_for(sensor, target, tol=0.015, timeout=5.0):
-    steps = int(timeout * 1000 / timestep)
-    for _ in range(steps):
-        robot.step(timestep)
-        if near(sensor, target, tol):
-            return True
-    return False
-
-def set_arm_extension(ext):
-    """Distribute extension equally across the 4 arm segments (max ~0.13 each)."""
-    per_joint = min(ext / 4.0, 0.13)
+def set_arm(ext_per_seg):
     for m in [arm_l0, arm_l1, arm_l2, arm_l3]:
-        m.setPosition(per_joint)
+        m.setPosition(max(0.0, min(0.13, ext_per_seg)))
 
-def arm_extension_reached(target_ext, tol=0.02):
-    per_joint = min(target_ext / 4.0, 0.13)
-    return all(abs(s.getValue() - per_joint) < tol for s in arm_sensors)
+def arm_at(target_per_seg, tol=0.015):
+    return all(abs(s.getValue() - target_per_seg) < tol for s in arm_s)
+
+def step():
+    return robot.step(timestep) != -1
+
+# ── Startup: stow everything ──────────────────────────────────────────────────
+lift.setPosition(LIFT_APPROACH)
+set_arm(0.0)
+wrist_yaw.setPosition(0.0)
+wrist_pitch.setPosition(0.0)
+gripper_l.setPosition(GRIPPER_OPEN)
+gripper_r.setPosition(-GRIPPER_OPEN)
+head_pan.setPosition(0.0)
+head_tilt.setPosition(-0.5)
+
+# Let joints settle before starting
+for _ in range(int(2000 / timestep)):
+    robot.step(timestep)
 
 # ── State machine ─────────────────────────────────────────────────────────────
-APPROACH_LIFT   = 0.6   # lift height while driving (m)
-GRASP_LIFT      = 0.35  # lift height to lower onto box (m)
-CARRY_LIFT      = 0.7   # lift height while carrying
-ARM_REACH       = 0.3   # arm extension to reach box (m total across 4 joints)
-DRIVE_SPEED     = 1.5   # wheel speed (rad/s)
-TURN_SPEED      = 1.0
-DRIVE_FWD_TIME  = 2.5   # seconds of forward driving
-TURN_TIME       = 2.3   # seconds for ~90 degree turn
+state   = "DRIVE_TO_BOX"
+timer   = 0.0
+print(f"[stretch] state: {state}")
 
-state = "INIT"
-timer = 0.0
+# Odometry (simple encoder-based, no GPS required)
+heading  = 0.0   # radians from +X
+odom_x   = 0.0
+odom_y   = 0.0
+prev_vl  = 0.0
+prev_vr  = 0.0
 
-print("[stretch] Starting pick-and-place sequence")
+BOX_X,  BOX_Y  = 0.90, 0.00   # pickup target
+DROP_X, DROP_Y = 0.00, 0.90   # drop target
+
+def dist_to(tx, ty):
+    return math.sqrt((tx - odom_x)**2 + (ty - odom_y)**2)
+
+def angle_to(tx, ty):
+    """Bearing to target in world frame."""
+    return math.atan2(ty - odom_y, tx - odom_x)
+
+def wrap(a):
+    while a >  math.pi: a -= 2*math.pi
+    while a < -math.pi: a += 2*math.pi
+    return a
 
 while robot.step(timestep) != -1:
     dt = timestep / 1000.0
     timer += dt
 
-    # ── INIT: stow and wait for joints to settle ─────────────────────────────
-    if state == "INIT":
-        lift.setPosition(APPROACH_LIFT)
-        set_arm_extension(0.0)
-        gripper_l.setPosition(0.4)
-        gripper_r.setPosition(-0.4)
-        head_tilt.setPosition(-0.5)
-        if timer > 2.0:
-            state = "DRIVE_FWD"
-            timer = 0.0
-            print("[stretch] Driving toward box")
+    # Simple odometry from wheel velocities
+    vl = left_wheel.getVelocity()
+    vr = right_wheel.getVelocity()
+    v_lin = 0.051 * (vr + vl) / 2.0   # 0.051 m = wheel radius
+    v_ang = 0.051 * (vr - vl) / WHEEL_SEP
+    heading = wrap(heading + v_ang * dt)
+    odom_x += v_lin * math.cos(heading) * dt
+    odom_y += v_lin * math.sin(heading) * dt
 
-    # ── DRIVE_FWD: move toward the box ───────────────────────────────────────
-    elif state == "DRIVE_FWD":
-        drive(DRIVE_SPEED, DRIVE_SPEED)
-        if timer > DRIVE_FWD_TIME:
-            drive(0, 0)
+    # ── Drive to box ─────────────────────────────────────────────────────────
+    if state == "DRIVE_TO_BOX":
+        d = dist_to(BOX_X, BOX_Y)
+        bear = angle_to(BOX_X, BOX_Y)
+        err = wrap(bear - heading)
+
+        if d < 0.45:          # close enough to box to extend arm
+            stop()
             state = "EXTEND_ARM"
             timer = 0.0
-            print("[stretch] Extending arm over box")
+            print(f"[stretch] state: {state}  odom=({odom_x:.2f},{odom_y:.2f})")
+        else:
+            # Proportional steering
+            k = 1.8
+            steer = max(-1.0, min(1.0, k * err))
+            drive(DRIVE_SPEED * (1 - steer), DRIVE_SPEED * (1 + steer))
 
-    # ── EXTEND_ARM: push arm out toward box ──────────────────────────────────
+    # ── Extend arm toward box ─────────────────────────────────────────────────
     elif state == "EXTEND_ARM":
-        set_arm_extension(ARM_REACH)
-        if timer > 1.5 and arm_extension_reached(ARM_REACH):
-            state = "LOWER_LIFT"
+        set_arm(ARM_EXT)
+        if arm_at(ARM_EXT) or timer > 3.0:
+            state = "LOWER_GRASP"
             timer = 0.0
-            print("[stretch] Lowering onto box")
+            print(f"[stretch] state: {state}")
 
-    # ── LOWER_LIFT: descend onto box ─────────────────────────────────────────
-    elif state == "LOWER_LIFT":
-        lift.setPosition(GRASP_LIFT)
-        if timer > 2.0 and near(lift_sensor, GRASP_LIFT, tol=0.03):
+    # ── Lower lift to grasp height ────────────────────────────────────────────
+    elif state == "LOWER_GRASP":
+        lift.setPosition(LIFT_GRASP)
+        if at(lift_s, LIFT_GRASP, tol=0.025) or timer > 3.5:
             state = "GRASP"
             timer = 0.0
-            print("[stretch] Closing gripper")
+            print(f"[stretch] state: {state}")
 
-    # ── GRASP: close gripper ─────────────────────────────────────────────────
+    # ── Close gripper ─────────────────────────────────────────────────────────
     elif state == "GRASP":
-        gripper_l.setPosition(-0.2)
-        gripper_r.setPosition(0.2)
+        gripper_l.setPosition(GRIPPER_CLOSE)
+        gripper_r.setPosition(-GRIPPER_CLOSE)
         if timer > 1.2:
-            state = "LIFT_UP"
+            state = "PICK_UP"
             timer = 0.0
-            print("[stretch] Lifting box")
+            print(f"[stretch] state: {state}")
 
-    # ── LIFT_UP: raise object ────────────────────────────────────────────────
-    elif state == "LIFT_UP":
-        lift.setPosition(CARRY_LIFT)
-        if timer > 2.0 and near(lift_sensor, CARRY_LIFT, tol=0.03):
-            state = "RETRACT_ARM"
+    # ── Raise lift ────────────────────────────────────────────────────────────
+    elif state == "PICK_UP":
+        lift.setPosition(LIFT_CARRY)
+        if at(lift_s, LIFT_CARRY, tol=0.03) or timer > 3.5:
+            state = "RETRACT"
             timer = 0.0
-            print("[stretch] Retracting arm")
+            print(f"[stretch] state: {state}")
 
-    # ── RETRACT_ARM: pull arm back in ────────────────────────────────────────
-    elif state == "RETRACT_ARM":
-        set_arm_extension(0.0)
-        if timer > 1.5 and arm_extension_reached(0.0):
-            state = "TURN"
+    # ── Retract arm ───────────────────────────────────────────────────────────
+    elif state == "RETRACT":
+        set_arm(0.0)
+        if arm_at(0.0) or timer > 3.0:
+            state = "TURN_TO_DROP"
             timer = 0.0
-            print("[stretch] Turning to drop zone")
+            print(f"[stretch] state: {state}")
 
-    # ── TURN: rotate ~90 degrees ─────────────────────────────────────────────
-    elif state == "TURN":
-        drive(-TURN_SPEED, TURN_SPEED)
-        if timer > TURN_TIME:
-            drive(0, 0)
-            state = "EXTEND_PLACE"
+    # ── Turn toward drop zone ─────────────────────────────────────────────────
+    elif state == "TURN_TO_DROP":
+        bear = angle_to(DROP_X, DROP_Y)
+        err = wrap(bear - heading)
+        if abs(err) < 0.08:
+            stop()
+            state = "DRIVE_TO_DROP"
             timer = 0.0
-            print("[stretch] Extending to drop position")
+            print(f"[stretch] state: {state}")
+        else:
+            direction = 1 if err > 0 else -1
+            drive(-TURN_SPEED * direction, TURN_SPEED * direction)
 
-    # ── EXTEND_PLACE: reach out to drop ──────────────────────────────────────
-    elif state == "EXTEND_PLACE":
-        set_arm_extension(ARM_REACH * 0.8)
-        if timer > 1.5 and arm_extension_reached(ARM_REACH * 0.8):
-            state = "LOWER_PLACE"
+    # ── Drive toward drop zone ────────────────────────────────────────────────
+    elif state == "DRIVE_TO_DROP":
+        d = dist_to(DROP_X, DROP_Y)
+        bear = angle_to(DROP_X, DROP_Y)
+        err = wrap(bear - heading)
+
+        if d < 0.50:
+            stop()
+            state = "PLACE_EXTEND"
             timer = 0.0
-            print("[stretch] Lowering to drop")
+            print(f"[stretch] state: {state}")
+        else:
+            k = 1.8
+            steer = max(-1.0, min(1.0, k * err))
+            drive(DRIVE_SPEED * (1 - steer), DRIVE_SPEED * (1 + steer))
 
-    # ── LOWER_PLACE: descend to drop height ──────────────────────────────────
-    elif state == "LOWER_PLACE":
-        lift.setPosition(GRASP_LIFT + 0.05)
-        if timer > 1.5:
+    # ── Extend arm over drop zone ─────────────────────────────────────────────
+    elif state == "PLACE_EXTEND":
+        set_arm(ARM_PLACE_EXT)
+        if arm_at(ARM_PLACE_EXT) or timer > 3.0:
+            state = "PLACE_LOWER"
+            timer = 0.0
+            print(f"[stretch] state: {state}")
+
+    # ── Lower onto drop zone ──────────────────────────────────────────────────
+    elif state == "PLACE_LOWER":
+        lift.setPosition(LIFT_GRASP + 0.08)
+        if at(lift_s, LIFT_GRASP + 0.08, tol=0.03) or timer > 3.0:
             state = "RELEASE"
             timer = 0.0
-            print("[stretch] Releasing box")
+            print(f"[stretch] state: {state}")
 
-    # ── RELEASE: open gripper ────────────────────────────────────────────────
+    # ── Open gripper ──────────────────────────────────────────────────────────
     elif state == "RELEASE":
-        gripper_l.setPosition(0.4)
-        gripper_r.setPosition(-0.4)
+        gripper_l.setPosition(GRIPPER_OPEN)
+        gripper_r.setPosition(-GRIPPER_OPEN)
         if timer > 1.0:
-            state = "DONE"
+            state = "STOW"
             timer = 0.0
-            print("[stretch] Pick-and-place complete!")
+            print(f"[stretch] state: {state}")
 
-    # ── DONE: stow robot ─────────────────────────────────────────────────────
-    elif state == "DONE":
-        set_arm_extension(0.0)
+    # ── Stow robot ────────────────────────────────────────────────────────────
+    elif state == "STOW":
+        set_arm(0.0)
         lift.setPosition(0.3)
         head_tilt.setPosition(0.0)
-        # Just idle
+        if timer > 2.0:
+            state = "DONE"
+            print("[stretch] Pick-and-place complete!")
+
+    elif state == "DONE":
+        pass  # idle

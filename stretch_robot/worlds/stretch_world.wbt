@@ -13,7 +13,7 @@ WorldInfo {
     "Meshes: hello-robot/stretch_ros"
     "Controller: stretch_pick_place"
   ]
-  basicTimeStep 16
+  basicTimeStep 8
   contactProperties [
     ContactProperties {
       material1 "box"
