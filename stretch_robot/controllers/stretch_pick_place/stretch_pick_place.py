@@ -47,7 +47,7 @@ WHEEL_BASELINE  = 0.315  # m  (distance between drive wheels)
 
 # Arm / lift parameters
 LIFT_TRAVEL     = 0.52   # m  – lift height while driving (arm out of the way)
-LIFT_GRASP      = 0.38   # m  – lift height to lower onto box
+LIFT_GRASP      = 0.42   # m  – lift height to lower onto box
 LIFT_CARRY      = 0.60   # m  – lift height while carrying
 ARM_EXT         = 0.10   # m  per segment (4 segments → 0.40 m total reach)
 GRIPPER_OPEN    =  0.35  # rad
