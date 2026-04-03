@@ -1053,12 +1053,6 @@ PROTO Stretch [
       }
     ]
     name IS name
-    boundingObject Transform {
-      translation 0 0 0.10
-      children [
-        Box { size 0.33 0.33 0.20 }
-      ]
-    }
     physics Physics {
       density -1
       mass 1.072378
