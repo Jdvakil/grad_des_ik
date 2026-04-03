@@ -985,7 +985,7 @@ PROTO Stretch [
         boundingObject Box { size 0.07 0.07 0.07 }
         physics Physics {
           density -1
-          mass 0.749143
+          mass 0.300
           centerOfMass [ 0.007558 0.773971 0.006473 ]
           inertiaMatrix [
             7.098545e-02 4.379221e-04 7.110481e-02
@@ -1055,11 +1055,11 @@ PROTO Stretch [
     name IS name
     physics Physics {
       density -1
-      mass 1.072378
-      centerOfMass [ -0.109461 -0.000741 0.091492 ]
+      mass 18.0
+      centerOfMass [ -0.05 0.0 0.08 ]
       inertiaMatrix [
-        3.105809e-03 4.337987e-03 3.720473e-03
-        1.518285e-06 4.169047e-04 1.334877e-05
+        0.8 0.9 0.6
+        0.0 0.0 0.0
       ]
     }
   }
