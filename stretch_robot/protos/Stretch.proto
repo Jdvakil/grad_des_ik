@@ -137,8 +137,10 @@ PROTO Stretch [
               metalness 0
             }
             castShadows FALSE
-            geometry DEF omni_wheel_m Mesh {
-              url "../meshes/omni_wheel_m.STL"
+            # STL omni wheel >100k verts — use sphere (matches boundingObject below)
+            geometry Sphere {
+              radius 0.032
+              subdivision 1
             }
           }
         ]
@@ -886,8 +888,17 @@ PROTO Stretch [
                                 translation 0.004300 -0.017500 0.000000
                                 rotation 0.577350 0.577350 0.577350 2.094395
                                 children [
-                                  DEF d435_visual CadShape {
-                                    url "../meshes/realsense2/d435.dae"
+                                  # d435.dae >100k verts — box matches camera_link boundingObject
+                                  Shape {
+                                    appearance PBRAppearance {
+                                      baseColor 0.12 0.12 0.14
+                                      roughness 0.55
+                                      metalness 0.35
+                                    }
+                                    castShadows FALSE
+                                    geometry Box {
+                                      size 0.025050 0.090000 0.025000
+                                    }
                                   }
                                 ]
                               }

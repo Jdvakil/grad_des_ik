@@ -7,7 +7,8 @@ Overview
 --------
 This controller demonstrates a basic 2D waypoint navigation stack:
 
-  1. A list of (x, y) waypoints is defined in advance.
+  1. A list of (x, y) ground-plane waypoints is defined in advance (Webots uses
+     Z-up; horizontal motion is in X–Y, height is GPS[2]).
   2. A unified go-to-point law maps range and bearing error to forward speed
      and turn rate (then to wheel speeds), so the base can arc in and stop
      instead of alternating pure spin vs. drive near the goal.
@@ -16,8 +17,8 @@ This controller demonstrates a basic 2D waypoint navigation stack:
 Key concepts illustrated
 ------------------------
   * Differential drive kinematics
-  * Ground-truth base pose from Webots GPS + InertialUnit (wheel integration
-    is omitted: imported models often have joint-axis sign quirks that break θ).
+  * Ground-truth (x,y) from Webots GPS; yaw from InertialUnit (do not derive θ
+    from GPS deltas — sensor noise caused false headings and endless in-place scrubbing).
   * Proportional (P) controller for heading
   * State-machine task sequencing
 
@@ -50,6 +51,9 @@ W_SPIN_MAX      = 0.90   # |ω| cap when rotating in place (large misalignment)
 ALIGN_THRESHOLD = 1.05   # rad (~60°): above this, v=0 and spin only; below, drive+steer
 APPROACH_RAMP   = 0.36   # m – scale v down as dist → 0 to limit overshoot
 WHEEL_OMEGA_LIM = 1.15   # rad/s – clamp each wheel command
+# IMU yaw often has a few degrees of bias / Euler coupling; tiny |err| with large K_W
+# saturates opposite wheels and the base stops translating (scrubs in place).
+HEADING_DEADBAND = math.radians(11.0)
 
 # Robot geometry (Stretch RE1/RE2)
 WHEEL_RADIUS    = 0.051  # m
@@ -74,7 +78,7 @@ GRIPPER_OPEN    =  0.35  # rad
 GRIPPER_CLOSE   = -0.20  # rad
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# WAYPOINTS  (x, y, action)
+# WAYPOINTS  (world_x, world_y, action)  — floor plane (Z-up); matches .wbt SFVec3f
 #
 # Approach positions so the extended arm tip lands on the target:
 #   arm_tip = (robot_x − 0.024,  robot_y − 0.545,  0.162+LIFT_GRASP)
@@ -132,7 +136,7 @@ arm_sensors = [get_sensor(f"joint_arm_l{i}_sensor") for i in range(4)]
 gl_sensor   = get_sensor("joint_gripper_finger_left_sensor")
 gr_sensor   = get_sensor("joint_gripper_finger_right_sensor")
 
-# World-frame pose (see Stretch.proto: base_gps, base_imu)
+# Ground-truth pose (see Stretch.proto)
 base_gps = get_sensor("base_gps")
 base_imu = get_sensor("base_imu")
 
@@ -268,11 +272,11 @@ def do_place():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# NAVIGATION STATE  (world frame: x,y from GPS; yaw from IMU)
+# NAVIGATION STATE  (Z-up world: x,y from GPS; yaw from IMU)
 # ═══════════════════════════════════════════════════════════════════════════════
 x       = 0.0   # m
 y       = 0.0   # m
-theta   = 0.0   # rad, yaw about world +Z (0 = facing +X)
+theta   = 0.0   # rad
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WAYPOINT NAVIGATION LOOP
@@ -299,21 +303,30 @@ for wp_index, (wx, wy, action) in enumerate(WAYPOINTS):
 
     # ── Phase 1: Navigate to waypoint ──────────────────────────────────────
     while robot.step(timestep) != -1:
-        pos   = base_gps.getValues()
-        x, y  = pos[0], pos[1]
-        rpy   = base_imu.getRollPitchYaw()
-        theta = wrap_angle(rpy[2])
+        pos = base_gps.getValues()
+        x, y = pos[0], pos[1]
+        rpy = base_imu.getRollPitchYaw()
+        yaw = rpy[2]
+        if not (math.isfinite(x) and math.isfinite(y)):
+            left_wheel.setVelocity(0)
+            right_wheel.setVelocity(0)
+            continue
+        if math.isfinite(yaw):
+            theta = wrap_angle(yaw)
+        # else: keep previous theta (gimbal lock / NaN)
 
-        dx     = wx - x
-        dy     = wy - y
-        dist   = math.sqrt(dx*dx + dy*dy)
+        dx = wx - x
+        dy = wy - y
+        dist = math.hypot(dx, dy)
         target_heading = math.atan2(dy, dx)
         heading_err    = wrap_angle(target_heading - theta)
+        if abs(heading_err) < HEADING_DEADBAND:
+            heading_err = 0.0
 
         if dist < WAYPOINT_TOL:
             left_wheel.setVelocity(0)
             right_wheel.setVelocity(0)
-            print(f"[stretch]   Arrived at ({x:.2f},{y:.2f}), heading err={math.degrees(heading_err):.1f}°")
+            print(f"[stretch]   Arrived at ({x:.2f}, {y:.2f}), heading err={math.degrees(heading_err):.1f}°", flush=True)
             break
 
         # ── v–ω command (forward = robot +X, +ω = CCW) ─────────────────────────
