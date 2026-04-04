@@ -40,7 +40,7 @@ from controller import Robot
 WAYPOINT_TOL    = 0.11  # m – stop when range to waypoint below this
 
 # Unified go-to-point: body-frame v (m/s) + ω (rad/s) → wheel ω (rad/s).
-# A separate “turn then drive” mode often spins forever near the goal (bearing noise,
+# A separate "turn then drive" mode often spins forever near the goal (bearing noise,
 # or distance never shrinks while |heading_err| stays above a deadband).
 K_V             = 0.50   # forward speed gain (1/s), capped by V_LIN_MAX
 V_LIN_MAX       = 0.052  # m/s (~ 1 rad/s wheel * wheel radius)
@@ -56,25 +56,38 @@ WHEEL_RADIUS    = 0.051  # m
 WHEEL_BASELINE  = 0.315  # m  (distance between drive wheels)
 
 # Arm / lift parameters
-LIFT_TRAVEL     = 0.52   # m  – lift height while driving (arm out of the way)
-LIFT_GRASP      = 0.36  # m  – lift height to lower onto box (tune vs. box top in sim)
-LIFT_CARRY      = 0.60   # m  – lift height while carrying
-ARM_EXT         = 0.125  # m  per segment (4 segments; proto max 0.13 m each)
+#
+# Kinematics (robot facing +X, arm extends in -Y world direction):
+#   wrist world pos (robot at origin, lift=0, arm=0):
+#     x = robot_x − 0.024
+#     y = robot_y − 0.145
+#     z = 0.162 + lift_position
+#   at full extension (4 × ARM_EXT): y -= 0.40
+#
+# With LIFT_GRASP=0.30:  wrist_z ≈ 0.162+0.30 = 0.462 m
+# Box/pedestal top at 0.41 m, box centre at 0.46 m → good match.
+LIFT_TRAVEL     = 0.55   # m  – lift height while driving (arm retracted)
+LIFT_GRASP      = 0.30   # m  – lift height to grasp (wrist at ~0.46 m)
+LIFT_CARRY      = 0.65   # m  – lift height while carrying (clears pedestals)
+ARM_EXT         = 0.10   # m  per segment (4 segments → 0.40 m total reach)
 GRIPPER_OPEN    =  0.35  # rad
 GRIPPER_CLOSE   = -0.20  # rad
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WAYPOINTS  (x, y, action)
 #
-# 'action' is executed when the waypoint is reached:
-#   None      – just drive through
-#   'pick'    – extend arm, lower, close gripper, raise
-#   'place'   – lower arm, open gripper, raise
+# Approach positions so the extended arm tip lands on the target:
+#   arm_tip = (robot_x − 0.024,  robot_y − 0.545,  0.162+LIFT_GRASP)
+#
+#   Pick box at  (0.90, 0.00) → robot at (0.924, 0.545)
+#   Drop zone at (0.00, 0.90) → robot at (0.024, 1.445)
+#
+# After reaching each waypoint the robot aligns to theta=0 so the arm
+# always extends in the −Y world direction.
 # ═══════════════════════════════════════════════════════════════════════════════
 WAYPOINTS = [
-    # Coordinates match stretch_world.wbt: box center (0.9, 0), drop disc (0, 0.9)
-    (0.90, 0.00, 'pick'),
-    (0.00, 0.90, 'place'),
+    (0.924, 0.545, 'pick'),    # approach position for red box on pedestal
+    (0.024, 1.445, 'place'),   # approach position for green drop pedestal
 ]
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -148,6 +161,16 @@ def wait_steps(n):
     for _ in range(n):
         robot.step(timestep)
 
+def wheel_cmd(v_lin, w_cmd):
+    """Convert body-frame (v, ω) to clamped wheel angular velocities."""
+    half_L  = 0.5 * WHEEL_BASELINE
+    omega_l = (v_lin - w_cmd * half_L) / WHEEL_RADIUS
+    omega_r = (v_lin + w_cmd * half_L) / WHEEL_RADIUS
+    omega_l = max(-WHEEL_OMEGA_LIM, min(WHEEL_OMEGA_LIM, omega_l))
+    omega_r = max(-WHEEL_OMEGA_LIM, min(WHEEL_OMEGA_LIM, omega_r))
+    left_wheel.setVelocity(omega_l)
+    right_wheel.setVelocity(omega_r)
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # INITIAL POSE
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -215,12 +238,12 @@ def do_place():
         robot.step(timestep)
         if arm_reached(ARM_EXT): break
 
-    # 2. Lower lift to place height
-    lift.setPosition(LIFT_GRASP + 0.07)
+    # 2. Lower lift to place height (same pedestal height as pick)
+    lift.setPosition(LIFT_GRASP)
     timeout = int(4000 / timestep)
     for _ in range(timeout):
         robot.step(timestep)
-        if lift_reached(LIFT_GRASP + 0.07): break
+        if lift_reached(LIFT_GRASP): break
 
     # 3. Open gripper
     gripper_l.setPosition(GRIPPER_OPEN)
@@ -256,14 +279,29 @@ theta   = 0.0   # rad, yaw about world +Z (0 = facing +X)
 # ═══════════════════════════════════════════════════════════════════════════════
 print("[stretch] Starting waypoint navigation")
 
+def align_to_heading(target_heading):
+    """Spin in place until robot faces target_heading (P-control on IMU yaw)."""
+    global theta
+    print(f"[stretch]   Aligning to {math.degrees(target_heading):.1f}°")
+    while robot.step(timestep) != -1:
+        rpy   = base_imu.getRollPitchYaw()
+        theta = wrap_angle(rpy[2])
+        err   = wrap_angle(target_heading - theta)
+        if abs(err) < 0.03:
+            left_wheel.setVelocity(0)
+            right_wheel.setVelocity(0)
+            break
+        w_cmd = max(-W_SPIN_MAX, min(W_SPIN_MAX, K_W * err))
+        wheel_cmd(0.0, w_cmd)
+
 for wp_index, (wx, wy, action) in enumerate(WAYPOINTS):
     print(f"[stretch] Waypoint {wp_index + 1}/{len(WAYPOINTS)}: target ({wx:.2f}, {wy:.2f})  action={action}")
 
-    # ── Phase 1: Turn toward waypoint ──────────────────────────────────────
+    # ── Phase 1: Navigate to waypoint ──────────────────────────────────────
     while robot.step(timestep) != -1:
-        pos = base_gps.getValues()
-        x, y = pos[0], pos[1]
-        rpy = base_imu.getRollPitchYaw()
+        pos   = base_gps.getValues()
+        x, y  = pos[0], pos[1]
+        rpy   = base_imu.getRollPitchYaw()
         theta = wrap_angle(rpy[2])
 
         dx     = wx - x
@@ -285,18 +323,16 @@ for wp_index, (wx, wy, action) in enumerate(WAYPOINTS):
         else:
             speed_scale = min(1.0, max(0.14, dist / APPROACH_RAMP))
             v_lin = min(V_LIN_MAX, K_V * dist) * speed_scale
-            w_lim = W_BODY_MAX
-            w_cmd = max(-w_lim, min(w_lim, K_W * heading_err))
+            w_cmd = max(-W_BODY_MAX, min(W_BODY_MAX, K_W * heading_err))
 
-        half_L = 0.5 * WHEEL_BASELINE
-        omega_l = (v_lin - w_cmd * half_L) / WHEEL_RADIUS
-        omega_r = (v_lin + w_cmd * half_L) / WHEEL_RADIUS
-        omega_l = max(-WHEEL_OMEGA_LIM, min(WHEEL_OMEGA_LIM, omega_l))
-        omega_r = max(-WHEEL_OMEGA_LIM, min(WHEEL_OMEGA_LIM, omega_r))
-        left_wheel.setVelocity(omega_l)
-        right_wheel.setVelocity(omega_r)
+        wheel_cmd(v_lin, w_cmd)
 
-    # ── Phase 2: Execute action at waypoint ────────────────────────────────
+    # ── Phase 2: Align to theta=0 before arm action ────────────────────────
+    # The arm extends in the −Y world direction only when robot faces +X (θ=0).
+    if action in ('pick', 'place'):
+        align_to_heading(0.0)
+
+    # ── Phase 3: Execute action at waypoint ────────────────────────────────
     left_wheel.setVelocity(0)
     right_wheel.setVelocity(0)
 

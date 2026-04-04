@@ -47,9 +47,34 @@ Stretch {
   controller "stretch_pick_place"
 }
 
-# Box to pick up — placed in front of the robot (robot faces +X)
+# Pedestal for pickup box (arm wrist reaches ~0.46 m when LIFT_GRASP=0.30)
+DEF PICK_PEDESTAL Solid {
+  translation 0.9 0 0.205
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.6 0.6 0.6
+        roughness 0.8
+        metalness 0.0
+      }
+      geometry Box {
+        size 0.10 0.10 0.41
+      }
+    }
+  ]
+  name "pick_pedestal"
+  boundingObject Box {
+    size 0.10 0.10 0.41
+  }
+  physics Physics {
+    density -1
+    mass 5.0
+  }
+}
+
+# Box to pick up — raised on pedestal so arm can reach it
 DEF PICKUP_BOX Solid {
-  translation 0.9 0 0.05
+  translation 0.9 0 0.46
   children [
     Shape {
       appearance PBRAppearance {
@@ -73,9 +98,34 @@ DEF PICKUP_BOX Solid {
   }
 }
 
-# Drop zone marker (flat disc on the floor, to the robot's left)
+# Pedestal for drop zone (same height as pick pedestal)
+DEF DROP_PEDESTAL Solid {
+  translation 0 0.9 0.205
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.4 0.7 0.4
+        roughness 0.8
+        metalness 0.0
+      }
+      geometry Box {
+        size 0.10 0.10 0.41
+      }
+    }
+  ]
+  name "drop_pedestal"
+  boundingObject Box {
+    size 0.10 0.10 0.41
+  }
+  physics Physics {
+    density -1
+    mass 5.0
+  }
+}
+
+# Drop zone marker (flat disc on top of pedestal)
 DEF DROP_ZONE Solid {
-  translation 0 0.9 0.001
+  translation 0 0.9 0.411
   children [
     Shape {
       appearance PBRAppearance {
@@ -85,7 +135,7 @@ DEF DROP_ZONE Solid {
       }
       geometry Cylinder {
         height 0.002
-        radius 0.15
+        radius 0.12
       }
     }
   ]
