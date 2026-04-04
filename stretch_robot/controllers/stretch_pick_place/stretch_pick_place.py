@@ -43,14 +43,14 @@ WAYPOINT_TOL    = 0.11  # m – stop when range to waypoint below this
 # Unified go-to-point: body-frame v (m/s) + ω (rad/s) → wheel ω (rad/s).
 # A separate "turn then drive" mode often spins forever near the goal (bearing noise,
 # or distance never shrinks while |heading_err| stays above a deadband).
-K_V             = 0.50   # forward speed gain (1/s), capped by V_LIN_MAX
-V_LIN_MAX       = 0.052  # m/s (~ 1 rad/s wheel * wheel radius)
+K_V             = 0.80   # forward speed gain (1/s), capped by V_LIN_MAX
+V_LIN_MAX       = 0.20   # m/s – forward cruise speed (≈ 4 rad/s per wheel)
 K_W             = 2.0    # yaw rate vs heading error (rad/s per rad)
-W_BODY_MAX      = 0.50   # |ω| cap while driving (arc toward goal)
+W_BODY_MAX      = 0.30   # |ω| cap while driving (keep inner wheel from reversing)
 W_SPIN_MAX      = 0.90   # |ω| cap when rotating in place (large misalignment)
 ALIGN_THRESHOLD = 1.05   # rad (~60°): above this, v=0 and spin only; below, drive+steer
 APPROACH_RAMP   = 0.36   # m – scale v down as dist → 0 to limit overshoot
-WHEEL_OMEGA_LIM = 1.15   # rad/s – clamp each wheel command
+WHEEL_OMEGA_LIM = 6.0    # rad/s – clamp each wheel command
 # IMU yaw often has a few degrees of bias / Euler coupling; tiny |err| with large K_W
 # saturates opposite wheels and the base stops translating (scrubs in place).
 HEADING_DEADBAND = math.radians(11.0)
@@ -166,8 +166,15 @@ def wait_steps(n):
         robot.step(timestep)
 
 def wheel_cmd(v_lin, w_cmd):
-    """Convert body-frame (v, ω) to clamped wheel angular velocities."""
-    half_L  = 0.5 * WHEEL_BASELINE
+    """Convert body-frame (v, ω) to clamped wheel angular velocities.
+
+    Cap steering so the slower wheel can reach 0 but never reverse during
+    forward motion (inner-wheel reversal causes spinning instead of arcing).
+    """
+    half_L = 0.5 * WHEEL_BASELINE
+    if v_lin > 0:
+        w_cap  = v_lin / half_L          # steer limit: slow wheel → 0
+        w_cmd  = max(-w_cap, min(w_cap, w_cmd))
     omega_l = (v_lin - w_cmd * half_L) / WHEEL_RADIUS
     omega_r = (v_lin + w_cmd * half_L) / WHEEL_RADIUS
     omega_l = max(-WHEEL_OMEGA_LIM, min(WHEEL_OMEGA_LIM, omega_l))
