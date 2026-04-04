@@ -1051,6 +1051,14 @@ PROTO Stretch [
           mass 0.074998
         }
       }
+      # Ground-truth pose for lab controllers (wheel odometry often disagrees with
+      # Webots joint axes on imported URDF models → perpetual in-place rotation).
+      GPS {
+        name "base_gps"
+      }
+      InertialUnit {
+        name "base_imu"
+      }
     ]
     name IS name
     physics Physics {
